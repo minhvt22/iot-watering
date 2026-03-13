@@ -1,0 +1,50 @@
+@theme {
+	/* === Brand / Soft Earth === */
+	--color-primary: #2f5c43;
+	--color-primary-hover: #244733;
+	--color-primary-active: #1a3325;
+	--color-primary-muted: oklch(from #2f5c43 l c h / 8%);
+	--color-primary-border: oklch(from #2f5c43 l c h / 15%);
+
+	/* === Backgrounds (Light) === */
+	--color-bg-base: #f4f7f4;
+	--color-bg-surface: #ffffff;
+	--color-bg-surface-elevated: #f9fdf9;
+	--color-bg-overlay: oklch(from #f4f7f4 l c h / 80%);
+
+	/* Backgrounds (Dark) */
+	--color-bg-base-dark: #0b120e;
+	--color-bg-surface-dark: #131e17;
+	--color-bg-surface-elevated-dark: #1a281e;
+	--color-bg-overlay-dark: oklch(from #0b120e l c h / 80%);
+
+	/* === Text (Light) === */
+	--color-text-primary: #1a2e22;
+	--color-text-secondary: #4a6353;
+	--color-text-muted: #829f8d;
+	--color-text-inverse: #f4f7f4;
+	--color-text-on-primary: #ffffff;
+
+	/* Text (Dark) */
+	--color-text-primary-dark: #e2e8e4;
+	--color-text-secondary-dark: #a8bcaf;
+	--color-text-muted-dark: #6e8878;
+
+	/* === Semantic === */
+	--color-success: #28a745;
+	--color-warning: #f59e0b;
+	--color-error: #ef4444;
+
+	/* === Borders === */
+	--color-border: #e0e8e2;
+	--color-border-dark: #1f3025;
+
+	/* === Shadows === */
+	--shadow-soft:
+		0 8px 30px -4px oklch(from #1a2e22 l c h / 6%), 0 4px 12px -2px oklch(from #1a2e22 l c h / 3%);
+	--shadow-soft-dark:
+		0 8px 30px -4px oklch(from #000000 l c h / 40%), 0 4px 12px -2px oklch(from #000000 l c h / 20%);
+
+	/* === Typography === */
+	--font-display: 'Inter', sans-serif;
+}

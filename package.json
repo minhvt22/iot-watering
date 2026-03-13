@@ -1,0 +1,24 @@
+{
+  "name": "water-sys",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "firmware/*"
+  ],
+  "scripts": {
+    "dev": "bun --filter \"*\" dev",
+    "build": "bun --filter \"*\" build"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.98.0",
+    "@sveltejs/kit": "^2.53.4",
+    "@tailwindcss/vite": "^4.2.1",
+    "chart.js": "^4.5.1",
+    "lucide-svelte": "^0.577.0",
+    "mqtt": "^5.15.0",
+    "svelte": "^5.53.7",
+    "svelte-chartjs": "^3.1.5",
+    "tailwindcss": "^4.2.1",
+    "vite": "^7.3.1"
+  }
+}
