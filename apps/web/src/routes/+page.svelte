@@ -4,214 +4,135 @@
 	import WaterPlantButton from '$lib/components/WaterPlantButton.svelte';
 	import ChartCard from '$lib/components/ChartCard.svelte';
 	import AdvancedSettings from '$lib/components/AdvancedSettings.svelte';
-	import { supabase } from '$lib/supabase/client';
-	import type { TelemetryRow, Database } from '$lib/supabase/types';
+	import DevicePairing from '$lib/components/DevicePairing.svelte';
+	import { deviceService } from '$lib/services/device.svelte';
+	import { onMount } from 'svelte';
 
-	// ─── Reactive state ────────────────────────────────────────
-	let connected = $state(true);
-	let moisture = $state(0);
-	let online = $state(false);
-	let lastSync = $state('Connecting...');
 	let isWatering = $state(false);
+	let showPairing = $state(false);
 
-	// ─── Chart data ────────────────────────────────────────────
-	let moistureLabels = $state<string[]>([]);
-	let moistureData = $state<number[]>([]);
-	let temperatureLabels = $state<string[]>([]);
-	let temperatureData = $state<number[]>([]);
+	// --- Derived Display Values ---
+	const moisture = $derived(deviceService.latestTelemetry?.moisture ?? 0);
+	const lastSync = $derived(
+		deviceService.latestTelemetry
+			? new Date(deviceService.latestTelemetry.recorded_at).toLocaleTimeString([], {
+					hour: '2-digit',
+					minute: '2-digit'
+				})
+			: 'No Signal'
+	);
 
-	// Hardcoded device ID - in production this comes from auth/session
-	const DEVICE_ID = 'YOUR_DEVICE_UUID';
-
-	// ─── Helpers ───────────────────────────────────────────────
-	function formatTime(iso: string) {
-		return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-	}
-
-	function applyTelemetry(rows: TelemetryRow[]) {
-		if (!rows.length) return;
-		const latest = rows[0];
-		moisture = Number(latest.moisture);
-		lastSync = formatTime(latest.recorded_at);
-		online = true;
-		// Chart: oldest → newest
-		const ordered = [...rows].reverse();
-		moistureLabels = ordered.map((r) => formatTime(r.recorded_at));
-		moistureData = ordered.map((r) => Number(r.moisture));
-		temperatureLabels = ordered.map((r) => formatTime(r.recorded_at));
-		temperatureData = ordered.map((r) => Number(r.temperature ?? 0));
-	}
-
-	// ─── Initial load ──────────────────────────────────────────
-	async function loadHistory() {
-		const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-		const { data, error } = await supabase
-			.from('telemetry')
-			.select('*')
-			.eq('device_id', DEVICE_ID)
-			.gte('recorded_at', since)
-			.order('recorded_at', { ascending: false })
-			.limit(48); // ~30-min intervals across 24h
-
-		if (error) {
-			console.error('[Supabase] History fetch error:', error.message);
-			useFallbackMocks();
-			return;
-		}
-		if (data && data.length) {
-			applyTelemetry(data as TelemetryRow[]);
-		} else {
-			useFallbackMocks(); // No data yet → show mocks during dev
-		}
-	}
-
-	// ─── Realtime subscription ─────────────────────────────────
-	function subscribeRealtime() {
-		supabase
-			.channel(`telemetry:${DEVICE_ID}`)
-			.on(
-				'postgres_changes',
-				{
-					event: 'INSERT',
-					schema: 'public',
-					table: 'telemetry',
-					filter: `device_id=eq.${DEVICE_ID}`
-				},
-				(payload) => {
-					const row = payload.new as TelemetryRow;
-					moisture = Number(row.moisture);
-					lastSync = formatTime(row.recorded_at);
-					online = true;
-					// Append to chart (drop oldest to keep 48 points)
-					moistureLabels = [...moistureLabels.slice(-47), formatTime(row.recorded_at)];
-					moistureData = [...moistureData.slice(-47), Number(row.moisture)];
-					temperatureLabels = [...temperatureLabels.slice(-47), formatTime(row.recorded_at)];
-					temperatureData = [...temperatureData.slice(-47), Number(row.temperature ?? 0)];
-				}
+	const moistureData = $derived(deviceService.telemetry.map((r) => Number(r.moisture)).reverse());
+	const moistureLabels = $derived(
+		deviceService.telemetry
+			.map((r) =>
+				new Date(r.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 			)
-			.subscribe((status) => {
-				connected = status === 'SUBSCRIBED';
-			});
-	}
+			.reverse()
+	);
 
-	// ─── Device devices realtime (online/offline status) ───────
-	function subscribeDevice() {
-		supabase
-			.channel(`devices:${DEVICE_ID}`)
-			.on(
-				'postgres_changes',
-				{
-					event: 'UPDATE',
-					schema: 'public',
-					table: 'devices',
-					filter: `id=eq.${DEVICE_ID}`
-				},
-				(payload) => {
-					online = (payload.new as { online: boolean }).online;
-				}
-			)
-			.subscribe();
-	}
+	const temperatureData = $derived(
+		deviceService.telemetry.map((r) => Number(r.temperature ?? 0)).reverse()
+	);
+	const temperatureLabels = $derived(moistureLabels);
 
-	// ─── Pump command ──────────────────────────────────────────
-	async function issuePumpCommand(cmd: 'pump_on' | 'pump_off', durationSeconds?: number) {
-		await supabase.from('commands').insert({
-			device_id: DEVICE_ID,
-			command: cmd,
-			duration_seconds: durationSeconds ?? null
-		} as Database['public']['Tables']['commands']['Insert']);
-	}
+	onMount(() => {
+		deviceService.init();
+		return () => deviceService.dispose();
+	});
 
 	let wateringInterval: ReturnType<typeof setInterval> | undefined;
 
 	function startWatering() {
+		if (!deviceService.device) return;
 		isWatering = true;
-		issuePumpCommand('pump_on');
-		// Optimistic local moisture bump while holding (replaced by realtime when device responds)
-		wateringInterval = setInterval(() => {
-			if (moisture < 100) moisture += 0.5;
-		}, 200);
+		deviceService.sendCommand('pump_on');
 	}
 
 	function stopWatering() {
 		isWatering = false;
-		issuePumpCommand('pump_off');
-		if (wateringInterval) {
-			clearInterval(wateringInterval);
-			wateringInterval = undefined;
-		}
+		deviceService.sendCommand('pump_off');
 	}
-
-	// ─── Dev fallback mocks ────────────────────────────────────
-	function useFallbackMocks() {
-		console.info('[Dev] Using mock data — connect device or set DEVICE_ID.');
-		moisture = 85;
-		online = false;
-		lastSync = 'No data';
-		moistureLabels = Array.from({ length: 12 }, (_, i) => `${i * 2}h`);
-		moistureData = [65, 70, 68, 80, 85, 82, 78, 85, 90, 88, 85, 85];
-		temperatureLabels = Array.from({ length: 12 }, (_, i) => `${i * 2}h`);
-		temperatureData = [22, 22.5, 23, 24.5, 26, 27, 28, 27.5, 26, 24, 23, 22.5];
-	}
-
-	// ─── Lifecycle ──────────────────────────────────────────────
-	$effect(() => {
-		loadHistory();
-		subscribeRealtime();
-		subscribeDevice();
-
-		return () => {
-			supabase.removeAllChannels();
-		};
-	});
 </script>
 
-<TopAppBar {connected} />
+<div class="flex min-h-dvh flex-col bg-surface">
+	<TopAppBar connected={true} onadd={() => (showPairing = true)} />
 
-<main class="mx-auto flex w-full max-w-4xl flex-1 flex-col p-4 pb-24 lg:p-8">
-	<!-- Hero Section -->
-	<div class="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-8">
-		<div class="md:col-span-7 lg:col-span-8">
-			<StatusSurface {moisture} {online} {lastSync} />
-		</div>
-
-		<div class="flex flex-col justify-center space-y-4 px-2 md:col-span-5 lg:col-span-4 md:px-0">
-			<div class="flex flex-col gap-2">
-				<WaterPlantButton
-					watering={isWatering}
-					onpressstart={startWatering}
-					onpressend={stopWatering}
-				/>
-				<p class="text-center text-sm leading-relaxed" style="color: var(--color-text-muted);">
-					Press and hold to manually override.<br class="hidden lg:block" />
-					Release to stop pump.
-				</p>
+	<main class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-12 p-4 pt-12 pb-24 lg:p-8">
+		{#if !deviceService.device && !showPairing && !deviceService.loading}
+			<div
+				class="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-primary/20 bg-primary/5 p-12 text-center"
+			>
+				<span class="material-symbols-outlined text-6xl text-primary">potted_plant</span>
+				<div class="flex flex-col gap-2">
+					<h2 class="text-xl font-bold text-on-surface">No Device Found</h2>
+					<p class="max-w-sm text-on-surface-variant">
+						You haven't paired any watering systems yet. Pair your device to start monitoring and
+						watering your plants.
+					</p>
+				</div>
+				<div class="pt-4 flex">
+					<button
+						onclick={() => (showPairing = true)}
+						class="rounded-full bg-primary px-8 py-3 font-bold text-on-primary shadow-sm outline-none transition-all hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+					>
+						Start Pairing
+					</button>
+				</div>
 			</div>
-		</div>
-	</div>
+		{/if}
 
-	<AdvancedSettings />
+		{#if deviceService.loading}
+			<div class="flex h-64 items-center justify-center">
+				<div
+					class="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"
+				></div>
+			</div>
+		{:else}
+			<!-- Hero Section -->
+			<div
+				class="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-8"
+				class:opacity-50={!deviceService.device}
+				class:pointer-events-none={!deviceService.device}
+			>
+				<div class="md:col-span-7 lg:col-span-8 flex flex-col">
+					<StatusSurface {moisture} online={deviceService.online} {lastSync} />
+				</div>
 
-	<!-- History Section -->
-	<div class="mt-12 mb-4">
-		<h2
-			class="mb-6 px-1 text-xl font-bold tracking-tight"
-			style="color: var(--color-text-primary);"
-		>
-			Dashboard
-		</h2>
+				<div class="flex flex-col justify-center gap-4 px-2 md:col-span-5 md:px-0 lg:col-span-4">
+					<WaterPlantButton
+						watering={isWatering}
+						onpressstart={startWatering}
+						onpressend={stopWatering}
+					/>
+					<p class="text-center text-sm leading-relaxed text-on-surface-variant">
+						Press and hold to manually override.<br class="hidden lg:block" />
+						Release to stop pump.
+					</p>
+				</div>
+			</div>
 
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-			<ChartCard title="Moisture History" data={moistureData} labels={moistureLabels} />
+			{#if deviceService.device}
+				<AdvancedSettings />
 
-			<ChartCard
-				title="Temperature"
-				type="line"
-				color="#f59e0b"
-				icon="device_thermostat"
-				data={temperatureData}
-				labels={temperatureLabels}
-			/>
-		</div>
-	</div>
-</main>
+				<!-- History Section -->
+				<div class="flex flex-col gap-6">
+					<h2 class="px-1 text-xl font-bold tracking-tight text-on-surface">Dashboard</h2>
+					<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+						<ChartCard title="Moisture History" data={moistureData} labels={moistureLabels} />
+						<ChartCard
+							title="Temperature"
+							type="line"
+							color="#f59e0b"
+							icon="device_thermostat"
+							data={temperatureData}
+							labels={temperatureLabels}
+						/>
+					</div>
+				</div>
+			{/if}
+		{/if}
+	</main>
+</div>
+
+<DevicePairing bind:open={showPairing} />

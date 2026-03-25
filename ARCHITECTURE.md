@@ -41,7 +41,7 @@ graph TD
 
     %% Hardware connections
     Firmware -->|POST Telemetry| RestQuery
-    Firmware -.->|Poll / Subscribe| Realtime
+    Firmware -.->|Subscribe| Realtime
     Firmware -->|1. Setup Token| Edge
     
     %% Internal Backend
@@ -65,32 +65,32 @@ sequenceDiagram
     participant DB as Supabase DB
     participant ESP32 as ESP32 (SmartPlanter-Setup)
 
-    User->>WebApp: Clicks "Add New Device"
-    WebApp->>DB: INSERT into `device_claims`
-    DB-->>WebApp: Returns `claim_token` (e.g. 849201)
-    
-    Note over WebApp: App waits and listens on<br/>Supabase Realtime for device activation.
+    ESP32->>ESP32: Boots, no ID found
+    ESP32->>ESP32: Generates random 6-digit PIN
+    Note over ESP32: Displays PIN and MAC on OLED
 
-    User->>ESP32: Connects phone to ESP32 Wi-Fi AP
-    ESP32-->>User: Serves Captive Portal HTML
-    User->>ESP32: Enters Home Wi-Fi SSID, Password & `claim_token`
+    User->>WebApp: Clicks "Add Device"
+    User->>WebApp: Enters MAC and PIN from OLED
     
-    ESP32->>ESP32: Saves Wi-Fi credentials to NVS
-    ESP32->>ESP32: Disconnects AP, Connects to Home Wi-Fi
+    WebApp->>DB: INSERT into `device_pairing_sessions`
+    DB-->>WebApp: Returns 201
+
+    ESP32->>ESP32: Listens via Realtime for its MAC
+    DB-.->>ESP32: Notifies: "PIN 123456 inserted for MAC AA:BB..."
     
-    ESP32->>Edge: POST /register-device { claim_token }
-    Edge->>DB: Validate `claim_token`
-    DB-->>Edge: Token Valid (Owner ID retrieved)
-    Edge->>DB: INSERT into `devices` (owner = owner_id)
-    DB-->>Edge: Returns permanent `device_id`
-    Edge->>DB: DELETE `device_claims` row (Token consumed)
+    ESP32->>ESP32: Validates PIN locally (Matched!)
+    
+    ESP32->>Edge: POST /functions/v1/claim-device { mac, pin }
+    Edge->>DB: Verify PIN in `device_pairing_sessions`
+    Edge->>DB: INSERT into `devices` (binds to user)
+    DB-->>Edge: Returns `device_id`
     
     Edge-->>ESP32: 200 OK + `device_id`
-    ESP32->>ESP32: Saves permanent `device_id` to NVS
+    ESP32->>ESP32: Saves `device_id` to NVS and Restarts
     
-    Note over DB, WebApp: Supabase Realtime detects new device row
-    DB-.->>WebApp: Push Realtime Notification
-    WebApp-->>User: Plays success animation!
+    Note over DB, WebApp: Realtime detects new device
+    DB-.->>WebApp: Push Notification
+    WebApp-->>User: Success animation!
 ```
 
 ---
@@ -110,7 +110,8 @@ sequenceDiagram
 
     %% Telemetry Flow
     rect rgb(23, 36, 27)
-        Note right of ESP32: Standard Telemetry Loop (e.g., Every 30m)
+        Note right of ESP32: Standard Telemetry Loop (e.g., Every 30s)
+        Note right of ESP32: OR Smart Delta Trigger (Moisture > 5.0)
         ESP32->>DB: POST /rest/v1/telemetry (moisture, temp)
         DB-->>RT: Trigger Insert Event
         RT-.->>App: Update Dashboard Chart Immediately
@@ -134,12 +135,22 @@ sequenceDiagram
         ESP32->>DB: UPDATE command set Status: `completed`
     end
 
-    %% Automatic Fail-safe
+    %% Automatic Fail-safe & Auto-Watering
     rect rgb(35, 30, 20)
-        Note right of ESP32: Hardware Failsafe
-        ESP32->>ESP32: If running > `pump_duration_seconds` limit?
-        ESP32->>Pump: GPIO LOW (Stop Pump)
+        Note right of ESP32: Hardware Autonomy
+        ESP32->>ESP32: If moisture < `auto_water_threshold` -> Start Pump
+        ESP32->>ESP32: If running > `pump_duration_seconds` -> Stop Pump
         ESP32->>DB: POST new System Event (Failsafe triggered)
+    end
+    
+    %% Configuration Sync
+    rect rgb(30, 45, 75)
+        Note left of User: Realtime Configuration
+        User->>App: Adjusts Threshold / Duration Slider
+        App->>DB: UPDATE `devices` table
+        DB-->>RT: Trigger Update Event
+        RT-.->>ESP32: Receives updated settings instantly
+        ESP32->>ESP32: Applies new settings (No polling)
     end
 ```
 

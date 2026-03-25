@@ -152,23 +152,14 @@
 </script>
 
 <div
-	class="rounded-3xl border p-6 transition-colors duration-300"
-	style="
-		background-color: var(--color-bg-surface-elevated);
-		border-color: var(--color-border);
-	"
+	class="flex flex-col gap-6 rounded-3xl border border-outline-variant bg-surface-variant p-6 shadow-sm transition-colors duration-300"
 >
-	<div class="mb-6 flex items-start justify-between">
-		<div>
-			<h3 class="font-bold tracking-tight" style="color: var(--color-text-primary);">{title}</h3>
-			<p class="text-xs mt-1" style="color: var(--color-text-muted);">
-				24-hour fluctuation history
-			</p>
+	<div class="flex items-start justify-between gap-4">
+		<div class="flex flex-col gap-1">
+			<h3 class="text-base font-bold leading-none tracking-tight text-on-surface">{title}</h3>
+			<p class="text-xs leading-none text-on-surface-variant">24-hour fluctuation history</p>
 		</div>
-		<div
-			class="flex h-8 w-8 items-center justify-center rounded-full"
-			style="background-color: var(--color-bg-base);"
-		>
+		<div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-surface">
 			<span class="material-symbols-outlined text-lg opacity-80" style="color: {color};"
 				>{icon}</span
 			>
@@ -180,8 +171,7 @@
 	</div>
 
 	<div
-		class="mt-4 flex justify-between text-2xs font-bold uppercase tracking-widest"
-		style="color: var(--color-text-muted);"
+		class="flex justify-between text-xs font-bold uppercase tracking-widest text-on-surface-variant"
 	>
 		<span>24h ago</span>
 		<span>Now</span>

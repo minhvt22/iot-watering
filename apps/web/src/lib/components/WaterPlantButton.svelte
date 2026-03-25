@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { Button } from 'bits-ui';
+	import { cn } from '$lib/utils';
+
 	interface Props {
 		watering?: boolean;
 		onpressstart?: () => void;
@@ -7,56 +10,37 @@
 	let { watering = false, onpressstart, onpressend }: Props = $props();
 
 	function handlePointerDown(e: PointerEvent) {
-		// Only primary button (left click or touch)
-		if (e.isPrimary && (e.button === 0 || e.pointerType === 'touch')) {
-			e.preventDefault(); // Prevent default text selection/scrolling
-			const currentTarget = e.currentTarget as HTMLElement;
-			currentTarget.setPointerCapture(e.pointerId);
-			if (onpressstart) onpressstart();
-		}
+		if (onpressstart) onpressstart();
 	}
 
-	function handlePointerUp(e: PointerEvent) {
-		if (e.isPrimary) {
-			const currentTarget = e.currentTarget as HTMLElement;
-			if (currentTarget.hasPointerCapture(e.pointerId)) {
-				currentTarget.releasePointerCapture(e.pointerId);
-			}
-			if (onpressend) onpressend();
-		}
-	}
-
-	function handlePointerCancel(e: PointerEvent) {
-		handlePointerUp(e);
+	function handlePointerUp() {
+		if (onpressend) onpressend();
 	}
 </script>
 
-<button
+<Button.Root
+	class={cn(
+		'relative flex h-20 w-full cursor-pointer items-center justify-center gap-4 overflow-hidden rounded-3xl px-8 py-4 font-bold shadow-md outline-none transition-all active:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+		watering
+			? 'bg-primary text-on-primary'
+			: 'bg-surface-variant text-on-surface-variant hover:bg-surface-variant/80'
+	)}
 	onpointerdown={handlePointerDown}
 	onpointerup={handlePointerUp}
-	onpointercancel={handlePointerCancel}
-	oncontextmenu={(e) => e.preventDefault()}
-	class="flex h-16 w-full cursor-pointer touch-none select-none items-center justify-center gap-3 rounded-xl text-lg font-bold transition-all duration-200 active:scale-95"
-	style="
-		background-color: {watering ? 'var(--color-primary-active)' : 'var(--color-primary)'};
-		color: var(--color-text-on-primary);
-		box-shadow: var(--shadow-m3-2);
-	"
-	onmouseenter={(e) => {
-		if (!watering)
-			(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-primary-hover)';
-	}}
-	onmouseleave={(e) => {
-		if (!watering) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-primary)';
-		// Use native mouseleave as a fallback to cancel if pointer capture missed something
-		if (watering && onpressend) onpressend();
-	}}
+	onpointerleave={handlePointerUp}
 >
 	{#if watering}
-		<span class="material-symbols-outlined animate-spin font-bold">progress_activity</span>
-		Watering...
+		<div class="absolute inset-0 animate-pulse bg-primary-container/20"></div>
+		<span class="material-symbols-outlined animate-bounce text-3xl">water_drop</span>
+		<div class="z-10 flex flex-col items-start gap-1">
+			<span class="text-xs uppercase leading-none tracking-widest opacity-80">Status</span>
+			<span class="text-xl leading-none">Watering...</span>
+		</div>
 	{:else}
-		<span class="material-symbols-outlined font-bold">water_drop</span>
-		Water Plant
+		<span class="material-symbols-outlined text-3xl">opacity</span>
+		<div class="flex flex-col items-start text-left gap-1">
+			<span class="text-xs uppercase leading-none tracking-widest opacity-60">Manual Override</span>
+			<span class="text-xl leading-none">Water Plant</span>
+		</div>
 	{/if}
-</button>
+</Button.Root>

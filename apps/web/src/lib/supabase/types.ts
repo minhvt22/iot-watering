@@ -121,6 +121,36 @@ export interface Database {
 				};
 				Relationships: never[];
 			};
+			device_pairing_sessions: {
+				Row: {
+					id: string;
+					mac_address: string;
+					pin: string;
+					owner_id: string;
+					is_claimed: boolean;
+					device_id: string | null;
+					created_at: string;
+				};
+				Insert: {
+					id?: string;
+					mac_address: string;
+					pin: string;
+					owner_id: string;
+					is_claimed?: boolean;
+					device_id?: string | null;
+					created_at?: string;
+				};
+				Update: {
+					id?: string;
+					mac_address?: string;
+					pin?: string;
+					owner_id?: string;
+					is_claimed?: boolean;
+					device_id?: string | null;
+					created_at?: string;
+				};
+				Relationships: never[];
+			};
 		};
 		Views: Record<string, never>;
 		Functions: Record<string, never>;

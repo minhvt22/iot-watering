@@ -4,6 +4,8 @@
 	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase/client';
 
+	import { Tooltip } from 'bits-ui';
+
 	let { children } = $props();
 
 	onMount(() => {
@@ -43,4 +45,6 @@
 	/>
 </svelte:head>
 
-{@render children()}
+<Tooltip.Provider>
+	{@render children()}
+</Tooltip.Provider>

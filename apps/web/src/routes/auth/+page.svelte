@@ -39,28 +39,24 @@
 
 <div class="flex min-h-dvh w-full items-center justify-center p-4">
 	<div
-		class="w-full max-w-md overflow-hidden rounded-3xl border p-8 transition-colors duration-300"
-		style="
-			background-color: var(--color-bg-surface);
-			border-color: var(--color-border);
-			box-shadow: var(--shadow-soft);
-		"
+		class="flex w-full max-w-md flex-col gap-8 overflow-hidden rounded-3xl border border-outline-variant bg-surface p-8 shadow-sm transition-colors duration-300"
 	>
-		<div class="mb-8 text-center">
+		<div class="flex flex-col items-center text-center gap-4">
 			<div
-				class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-				style="background-color: var(--color-primary-muted);"
+				class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-container text-primary"
 			>
-				<span class="material-symbols-outlined text-4xl" style="color: var(--color-primary);">
-					water_drop
-				</span>
+				<span class="material-symbols-outlined text-4xl">water_drop</span>
 			</div>
-			<h1 class="text-2xl font-bold tracking-tight" style="color: var(--color-text-primary);">
-				{isRegister ? 'Create an account' : 'Welcome back'}
-			</h1>
-			<p class="mt-2 text-sm" style="color: var(--color-text-muted);">
-				{isRegister ? 'Sign up to manage your smart planters.' : 'Sign in to monitor your plants.'}
-			</p>
+			<div class="flex flex-col gap-2">
+				<h1 class="text-2xl font-bold tracking-tight text-on-surface">
+					{isRegister ? 'Create an account' : 'Welcome back'}
+				</h1>
+				<p class="text-sm text-on-surface-variant">
+					{isRegister
+						? 'Sign up to manage your smart planters.'
+						: 'Sign in to monitor your plants.'}
+				</p>
+			</div>
 		</div>
 
 		<form
@@ -68,25 +64,16 @@
 				e.preventDefault();
 				handleSubmit();
 			}}
-			class="space-y-5"
+			class="flex flex-col gap-6"
 		>
 			{#if errorMsg}
-				<div
-					class="rounded-xl p-4 text-sm font-medium"
-					style="color: var(--color-error); background-color: color-mix(in srgb, var(--color-error) 10%, transparent);"
-				>
+				<div class="rounded-xl bg-error/10 p-4 text-sm font-bold text-error">
 					{errorMsg}
 				</div>
 			{/if}
 
-			<div class="space-y-1">
-				<label
-					for="email"
-					class="text-sm font-bold block"
-					style="color: var(--color-text-secondary);"
-				>
-					Email
-				</label>
+			<div class="flex flex-col gap-2">
+				<label for="email" class="block text-sm font-bold text-on-surface-variant"> Email </label>
 				<input
 					id="email"
 					name="email"
@@ -94,23 +81,12 @@
 					required
 					bind:value={email}
 					disabled={loading}
-					class="w-full rounded-xl border p-3 text-sm outline-none transition-colors"
-					style="
-						background-color: var(--color-bg-base);
-						border-color: var(--color-border);
-						color: var(--color-text-primary);
-					"
-					onfocus={(e) => (e.currentTarget.style.borderColor = 'var(--color-primary)')}
-					onblur={(e) => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+					class="h-12 w-full rounded-xl border border-outline bg-surface p-3 text-sm text-on-surface outline-none transition-colors focus-visible:border-primary disabled:opacity-50"
 				/>
 			</div>
 
-			<div class="space-y-1">
-				<label
-					for="password"
-					class="text-sm font-bold block"
-					style="color: var(--color-text-secondary);"
-				>
+			<div class="flex flex-col gap-2">
+				<label for="password" class="block text-sm font-bold text-on-surface-variant">
 					Password
 				</label>
 				<input
@@ -120,33 +96,14 @@
 					required
 					bind:value={password}
 					disabled={loading}
-					class="w-full rounded-xl border p-3 text-sm outline-none transition-colors"
-					style="
-						background-color: var(--color-bg-base);
-						border-color: var(--color-border);
-						color: var(--color-text-primary);
-					"
-					onfocus={(e) => (e.currentTarget.style.borderColor = 'var(--color-primary)')}
-					onblur={(e) => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+					class="h-12 w-full rounded-xl border border-outline bg-surface p-3 text-sm text-on-surface outline-none transition-colors focus-visible:border-primary disabled:opacity-50"
 				/>
 			</div>
 
 			<button
 				type="submit"
 				disabled={loading}
-				class="mt-2 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl text-base font-bold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-				style="
-					background-color: var(--color-primary);
-					color: var(--color-text-on-primary);
-					box-shadow: var(--shadow-m3-2);
-				"
-				onmouseenter={(e) => {
-					if (!loading)
-						(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-primary-hover)';
-				}}
-				onmouseleave={(e) => {
-					(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-primary)';
-				}}
+				class="flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary text-base font-bold text-on-primary shadow-sm outline-none transition-colors duration-200 hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				{#if loading}
 					<span class="material-symbols-outlined animate-spin font-bold">progress_activity</span>
@@ -157,7 +114,7 @@
 			</button>
 		</form>
 
-		<div class="mt-8 text-center text-sm" style="color: var(--color-text-muted);">
+		<div class="text-center text-sm text-on-surface-variant">
 			{#if isRegister}
 				Already have an account?
 				<button
@@ -165,10 +122,7 @@
 						isRegister = false;
 						errorMsg = '';
 					}}
-					class="cursor-pointer font-bold underline transition-colors focus:outline-none"
-					style="color: var(--color-primary);"
-					onmouseenter={(e) => (e.currentTarget.style.color = 'var(--color-primary-hover)')}
-					onmouseleave={(e) => (e.currentTarget.style.color = 'var(--color-primary)')}
+					class="cursor-pointer font-bold text-primary underline outline-none transition-colors hover:text-primary-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 				>
 					Sign in
 				</button>
@@ -179,10 +133,7 @@
 						isRegister = true;
 						errorMsg = '';
 					}}
-					class="cursor-pointer font-bold underline transition-colors focus:outline-none"
-					style="color: var(--color-primary);"
-					onmouseenter={(e) => (e.currentTarget.style.color = 'var(--color-primary-hover)')}
-					onmouseleave={(e) => (e.currentTarget.style.color = 'var(--color-primary)')}
+					class="cursor-pointer font-bold text-primary underline outline-none transition-colors hover:text-primary-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 				>
 					Sign up
 				</button>

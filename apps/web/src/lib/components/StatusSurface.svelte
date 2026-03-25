@@ -17,99 +17,104 @@
 </script>
 
 <div
-	class="relative overflow-hidden rounded-3xl border p-6 sm:p-8 transition-colors duration-300"
-	style="
-		background-color: var(--color-bg-surface);
-		border-color: var(--color-border);
-		box-shadow: var(--shadow-soft);
-	"
+	class="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-outline-variant bg-surface-glass p-8 shadow-sm backdrop-blur-xl transition-all duration-300 hover:shadow-md"
 >
-	<!-- Background watermark -->
-	<div class="pointer-events-none absolute -top-4 -right-4 p-4 opacity-[0.03]">
-		<span class="material-symbols-outlined text-9xl" style="color: var(--color-primary);">
-			water_drop
-		</span>
+	<!-- Glassmorphism overlay + Watermark -->
+	<div
+		class="pointer-events-none absolute inset-0 bg-linear-to-br from-primary/5 to-transparent"
+	></div>
+	<div
+		class="pointer-events-none absolute -right-10 -top-10 p-4 opacity-[0.04] transition-transform duration-700 group-hover:-rotate-12 group-hover:scale-110"
+	>
+		<span class="material-symbols-outlined text-primary" style="font-size: 200px;">water_drop</span>
 	</div>
 
-	<div class="relative z-10 flex h-full flex-col justify-between">
-		<div>
-			<p
-				class="mb-2 text-xs font-bold uppercase tracking-[0.2em]"
-				style="color: var(--color-text-muted);"
-			>
+	<div class="relative z-10 flex h-full flex-col justify-between gap-10">
+		<div class="flex flex-col gap-3">
+			<p class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/80">
 				Soil Moisture
 			</p>
 
-			<div class="flex items-baseline gap-3">
-				<span class="text-7xl font-bold tracking-tighter" style="color: var(--color-text-primary);">
-					{moisture}<span class="text-5xl font-semibold opacity-50">%</span>
-				</span>
+			<div class="flex items-baseline gap-4">
+				<div class="flex items-baseline gap-1">
+					<span class="text-8xl font-black tracking-tighter text-on-surface">{moisture}</span>
+					<span class="text-4xl font-medium opacity-30">%</span>
+				</div>
 				<span
-					class="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide"
-					style="color: {stateColor}; background-color: color-mix(in srgb, {stateColor} 15%, transparent);"
+					class="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider backdrop-blur-md"
+					style="color: {stateColor}; background-color: color-mix(in srgb, {stateColor} 12%, transparent);"
 				>
-					<span class="h-1.5 w-1.5 rounded-full" style="background-color: {stateColor};"></span>
+					<span class="h-2 w-2 animate-pulse rounded-full" style="background-color: {stateColor};"
+					></span>
 					{stateLabel}
 				</span>
 			</div>
 		</div>
 
-		<!-- Moisture bar -->
-		<div class="mt-8 mb-8">
-			<div
-				class="h-3 w-full overflow-hidden rounded-full"
-				style="background-color: var(--color-bg-base); box-shadow: var(--shadow-inner-soft);"
-			>
+		<!-- Moisture bar - Animated Gradient -->
+		<div class="flex w-full flex-col">
+			<div class="h-4 w-full overflow-hidden rounded-full bg-surface-variant/30 shadow-inner">
 				<div
-					class="h-full rounded-full transition-all duration-1000 ease-out"
+					class="relative h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
 					style="width: {moisture}%; background-color: {stateColor};"
-				></div>
+				>
+					<!-- Shine effect -->
+					<div
+						class="animate-shimmer absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent"
+					></div>
+				</div>
 			</div>
 		</div>
 
 		<!-- Status Footer -->
-		<div
-			class="flex items-center gap-6 border-t pt-5"
-			style="border-color: var(--color-border-muted);"
-		>
-			<div class="flex flex-col gap-1">
-				<span
-					class="text-2xs font-bold tracking-wider uppercase"
-					style="color: var(--color-text-muted);"
-				>
-					Network
-				</span>
-				<span
-					class="flex items-center gap-1.5 text-sm font-medium"
-					style="color: var(--color-text-secondary);"
-				>
+		<div class="flex items-center gap-8 border-t border-outline/10 pt-6">
+			<div class="flex items-center gap-3">
+				<div class="rounded-2xl bg-surface-variant/40 p-2">
 					<span
-						class="material-symbols-outlined text-lg"
+						class="material-symbols-outlined text-2xl"
 						style="color: {online ? 'var(--color-success)' : 'var(--color-error)'};"
 					>
 						{online ? 'cloud_done' : 'cloud_off'}
 					</span>
-					{online ? 'Online' : 'Offline'}
-				</span>
+				</div>
+				<div class="flex flex-col gap-1">
+					<span
+						class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60 leading-none"
+						>Network</span
+					>
+					<span class="text-sm font-bold text-on-surface leading-none"
+						>{online ? 'Online' : 'Offline'}</span
+					>
+				</div>
 			</div>
 
-			<div class="h-8 w-px" style="background-color: var(--color-border-muted);"></div>
-
-			<div class="flex flex-col gap-1">
-				<span
-					class="text-2xs font-bold tracking-wider uppercase"
-					style="color: var(--color-text-muted);"
-				>
-					Updated
-				</span>
-				<span
-					class="flex items-center gap-1.5 text-sm font-medium"
-					style="color: var(--color-text-secondary);"
-				>
-					<span class="material-symbols-outlined text-lg opacity-70">schedule</span>
-					{lastSync}
-				</span>
+			<div class="flex items-center gap-3">
+				<div class="rounded-2xl bg-surface-variant/40 p-2">
+					<span class="material-symbols-outlined text-2xl text-on-surface-variant/70">schedule</span
+					>
+				</div>
+				<div class="flex flex-col gap-1">
+					<span
+						class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60 leading-none"
+						>Updated</span
+					>
+					<span class="text-sm font-bold text-on-surface leading-none">{lastSync}</span>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
+
+<style>
+	@keyframes shimmer {
+		0% {
+			transform: translateX(-100%);
+		}
+		100% {
+			transform: translateX(100%);
+		}
+	}
+	.animate-shimmer {
+		animation: shimmer 2s infinite;
+	}
+</style>
