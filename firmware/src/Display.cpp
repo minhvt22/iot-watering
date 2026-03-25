@@ -41,7 +41,7 @@ void Display::showProvisioningStatus(const char *ssid, const char *ip) {
   _display.println("");
   _display.print("2. Open: ");
   _display.println(ip);
-  _display.println("3. Enter your Token.");
+  _display.println("to setup WiFi");
   _display.display();
 }
 

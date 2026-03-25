@@ -67,10 +67,12 @@ void onSupabaseEvent(SupabaseClient::Event event, const char *data) {
     Sound::play(SoundEvent::WIFI_CONNECTED);
     break;
   case SupabaseClient::Event::SETTINGS_SYNCED: {
-    if (!data) break;
+    if (!data)
+      break;
     String s(data);
     int sep = s.indexOf('|');
-    if (sep == -1) break;
+    if (sep == -1)
+      break;
     Hardware::setPumpDurationLimit(s.substring(0, sep).toInt());
     Hardware::setAutoWaterThreshold(s.substring(sep + 1).toInt());
     break;
@@ -91,23 +93,26 @@ void setup() {
 
   Hardware::setup();
   Display::setup();
-  Provisioning::setup();
   Sound::play(SoundEvent::BOOT_UP);
 
   SupabaseClient::setCallback(onSupabaseEvent);
+
   Provisioning::setAPCallback([]() {
+    transitionTo(AppState::PROVISIONING);
     Display::showProvisioningStatus(CAPTIVE_PORTAL_SSID,
                                     WiFi.softAPIP().toString().c_str());
     Sound::play(SoundEvent::NOTIFICATION);
   });
 
+  Provisioning::setup();
+
   SupabaseClient::setup(SUPABASE_URL, SUPABASE_KEY);
   lastWifiStatus = WiFi.status();
 
-  if (Provisioning::isInAPMode())
+  if (WiFi.status() == WL_CONNECTED)
+    transitionTo(AppState::WIFI_CONNECTED_SPLASH);
+  else if (Provisioning::isInAPMode())
     transitionTo(AppState::PROVISIONING);
-  else if (WiFi.status() != WL_CONNECTED)
-    transitionTo(AppState::WIFI_CONNECTING);
   else if (!Provisioning::isConfigured())
     transitionTo(AppState::UNPAIRED);
   else
@@ -115,29 +120,45 @@ void setup() {
 }
 
 void updateDisplay() {
+  static AppState lastDrawnState = (AppState)-1;
+  bool stateChanged = (currentState != lastDrawnState);
+  lastDrawnState = currentState;
+
   switch (currentState) {
   case AppState::PROVISIONING:
-    Display::showProvisioningStatus(Provisioning::getSSID().c_str(),
-                                    Provisioning::getIP().c_str());
+    if (stateChanged) {
+      Display::showProvisioningStatus(Provisioning::getSSID().c_str(),
+                                      Provisioning::getIP().c_str());
+    }
     break;
+
   case AppState::WIFI_CONNECTING:
-    Display::showWiFiConnecting(Provisioning::getSSID().c_str());
+    if (stateChanged) {
+      Display::showWiFiConnecting(Provisioning::getSSID().c_str());
+    }
     break;
+
   case AppState::WIFI_CONNECTED_SPLASH:
-    Display::showWiFiConnected(WiFi.localIP().toString().c_str(), MDNS_NAME);
+    if (stateChanged) {
+      Display::showWiFiConnected(WiFi.localIP().toString().c_str(), MDNS_NAME);
+    }
     if (millis() - stateStartTime > 5000) {
       transitionTo(Provisioning::isConfigured() ? AppState::ACTIVE
                                                 : AppState::UNPAIRED);
     }
     break;
+
   case AppState::UNPAIRED:
-    if (!SupabaseClient::isPairing())
+    if (stateChanged) {
+      Display::showStatus("Connecting Cloud...");
+    }
+    if (!SupabaseClient::isPairing()) {
       SupabaseClient::startPairingFlow();
-    else
-      Display::showStatus("Ready to Pair...");
+    }
     break;
+
   case AppState::ACTIVE:
-    if (millis() - lastOledRefresh >= 2000) {
+    if (stateChanged || (millis() - lastOledRefresh >= 2000)) {
       lastOledRefresh = millis();
       Display::showTelemetry(
           Hardware::readMoisture(), Hardware::readTemperature(),
