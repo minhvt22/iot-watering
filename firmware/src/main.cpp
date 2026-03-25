@@ -25,7 +25,9 @@ wl_status_t lastWifiStatus = WL_IDLE_STATUS;
 void onSupabaseEvent(SupabaseClient::Event event, const char *data) {
   switch (event) {
   case SupabaseClient::Event::CONNECTED:
-    Display::showStatus("Online");
+    if (currentState == AppState::ACTIVE) {
+      Display::showStatus("Online");
+    }
     break;
   case SupabaseClient::Event::DISCONNECTED:
     Display::showStatus("Offline");
