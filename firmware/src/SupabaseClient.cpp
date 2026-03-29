@@ -134,6 +134,10 @@ void SupabaseClient::handlePairingStep(JsonDocument &doc) {
   JsonObject record = payload["data"]["record"];
   if (record.isNull())
     record = payload["record"];
+  if (record.isNull())
+    record = payload["data"]["new"];
+  if (record.isNull())
+    record = payload["new"];
 
   if (record.isNull())
     return;
@@ -151,11 +155,16 @@ void SupabaseClient::handlePairingStep(JsonDocument &doc) {
 void SupabaseClient::handleRealtimeEvent(JsonDocument &doc) {
   JsonObject payload = doc[4];
   const char *table = payload["data"]["table"];
-  if (!table) table = payload["table"];
+  if (!table)
+    table = payload["table"];
 
   JsonObject record = payload["data"]["record"];
   if (record.isNull())
     record = payload["record"];
+  if (record.isNull())
+    record = payload["data"]["new"];
+  if (record.isNull())
+    record = payload["new"];
 
   if (record.isNull())
     return;
@@ -213,7 +222,7 @@ void SupabaseClient::startPairingFlow() {
         "\",\"phx_join\",{\"config\":{\"postgres_changes\":[{\"event\":"
         "\"INSERT\",\"schema\":\"public\",\"table\":\"device_pairing_"
         "sessions\",\"filter\":\"mac_address=eq." +
-        mac + "\"}]}}]";
+        mac + "\"}],\"user_token\":\"" + String(_anonKey) + "\"}}]";
     _webSocket.sendTXT(joinMsg);
   }
 }
@@ -273,7 +282,8 @@ void SupabaseClient::handleConnected() {
                      "\"devices\",\"filter\":\"id=eq." +
                      did +
                      "\"}"
-                     "]}}]";
+                     "],\"user_token\":\"" +
+                     String(_anonKey) + "\"}}]";
     _webSocket.sendTXT(joinMsg);
     if (_callback)
       _callback(SupabaseClient::Event::SUBSCRIBED, topic.c_str());
